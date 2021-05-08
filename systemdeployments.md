@@ -169,6 +169,10 @@ vi nginx.conf
 //Change root path for Docker server - 도커는 로컬 서버이기때문에! Treat like server
 /home/workspace/www/mydealdev
 도커안의 센토스안에 폴더와 연결... 로컬 머신의 폴더와 연결이 아님. 그런데 이렇게 하면 docker share folder와 연결됨
+Oh!!!!!! 여기서 연결함
+```
+docker container run -it --name "mydealdev" --hostname mydealdev -v /Users/michaelflynn/Desktop/test/scd:/home/workspace -p 80:80 -p 7101:7101 -p 7201:7201 centos /bin/bash
+```
 
 
 ```
@@ -215,7 +219,7 @@ http {
         server_name  _;
         #root         /usr/share/nginx/html;
         root         /home/workspace/www/mydealdev
-        ************ root 변경 (서버의 개발 디렉토리) 이렇게 하면 docker share folder랑 연결된다. But how?
+        ************ root 변경 (서버의 개발 디렉토리) 이렇게 하면 docker share folder랑 연결된다. 
 
         # Load configuration files for the default server block.
         include /etc/nginx/default.d/*.conf;
@@ -325,3 +329,52 @@ vi /etc/hosts
 ### .bashrc v / .bash_profile
 ssh를 사용해서 로그인 하면 .bash_profile을 사용하기때문에 그안의 셋팅, 예를들어 alias가 사용 가능
 그러나 docker는 attach해서 사용하는것이기 때문에 .bash_profile이 아닌 .bashrc를 사용한다.
+
+
+### TZ 설정
+rm /etc/localtime
+ls -s
+/usr/share/zoneinfo/Asia/Seoul
+/etc/localtime
+.bashrc
+export TZ = "Asia/Seoul
+
+
+### ssh keygen
+- create in root in Docker Server
+ssh-keygen i rsa
+ls -al .ssh
+ public key를 서버에 넣어주면 ssh를 통해 실제 서버에 연결 가능
+
+ssh-copy-id -i .ssh/id_rsa.pub root@<ip-address> -p <port-number>
+
+
+### rsync
+create check.txt
+vi check.txt
+This is Server! # 서버에 접속했으면 확인하기위해 적는 메시지
+
+rsync at server
+systemctl start rsyncd.service //d = daemon
+systemctl enable rsyncd.service //enable 서버가 시작되면 자동시작
+
+rsync at client(docker)
+rsync -avz -e 'ssh -p 50000' <host-ip-address>:/root/check.txt
+//avz 압축해서 데이터를 서로 주고 받아라는 의미
+
+
+## Commit Image
+- docker commit mydealdev mydealdev img
+
+#### Test image
+-docker create -it --name "imgtest" -v </Users/jade/workspace/sfd:/home/worksapce> -p 80:80 mydealdevimg //run이랑 똑같음, 테스트용 이미지, nginx만 테스트, 받는 사람은 Volume을 연결해야한다.
+docker start imgtest
+docker attach imgtest
+
+#### Save
+docker save -o mydealdevimg.tar mydealdevimg
+//o output
+
+#### Load
+docker load -i mydealdevimg.tar
+자기 도커에 이미지 생성
