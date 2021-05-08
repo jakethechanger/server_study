@@ -1,10 +1,12 @@
 # 시스템 개발환경
 
+
 1. 개발환경: Local PC (VS, MySql workbench, Git client)
 2. 개발서버: Docker (Nginx, Node, Flask, MySQL)
 3. 스테이징서버: Docker/Cloud (Ngnix, Node, Flask, MySQL)
 4. 서비스 서버: Cloud (Nginx, Node, Flask, MySQL)
 
+## 시스템 개발환경 : 개발서버
 
 ## Docker
 - docker --version
@@ -119,6 +121,7 @@ systemctl stop nginx
 [root@mydealdev /]# nginx
 [root@mydealdev /]# !ps
 ps -ef | grep nginx
+#컨테이너가 돌고 있는지 확인
 root       186     1  0 15:39 ?        00:00:00 nginx: master process nginx
 nginx      187   186  0 15:39 ?        00:00:00 nginx: worker process
 nginx      188   186  0 15:39 ?        00:00:00 nginx: worker process
@@ -126,3 +129,199 @@ root       190     1  0 15:39 pts/0    00:00:00 grep --color=auto nginx
 ```
 
 - Check whether it works in the browser, localhost
+
+- nginx -s stop
+
+5. Install volta
+curl https://get.volta.sh | bash
+// It should restart (exit->start->attach) to use volta
+
+6. Install node
+volta install node
+
+7. Install pm2
+volta install pm2
+
+8. Install python3
+yum install python3 -y
+
+node -v
+npm -v
+pip3 --version
+
+
+### 도커 이미지 생성
+
+*** Do this before commit
+```
+v. nginx.conf - local.conf(local.mydeal.com)
+v. .bashrc - ll, TZ, nginx, cd
+v. /etc/hosts & rysnc
+```
+
+Nginx 설정
+nginx
+cd /etc/nginx
+ls -al
+vi nginx.conf
+(그런데 nginx.conf를 바로 건드리지 않고 conf.d/local.conf를 수정해서 사용하는것이 낫다.)
+
+//Change root path for Docker server - 도커는 로컬 서버이기때문에! Treat like server
+/home/workspace/www/mydealdev
+도커안의 센토스안에 폴더와 연결... 로컬 머신의 폴더와 연결이 아님. 그런데 이렇게 하면 docker share folder와 연결됨
+
+
+```
+ For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+
+    server {
+        listen       80 default_server;
+        listen       [::]:80 default_server;
+        server_name  _;
+        #root         /usr/share/nginx/html;
+        root         /home/workspace/www/mydealdev
+        ************ root 변경 (서버의 개발 디렉토리) 이렇게 하면 docker share folder랑 연결된다. But how?
+
+        # Load configuration files for the default server block.
+        include /etc/nginx/default.d/*.conf;
+
+        location / {
+        }
+
+        error_page 404 /404.html;
+            location = /40x.html {
+        }
+
+        error_page 500 502 503 504 /50x.html;
+            location = /50x.html {
+        }
+    }
+
+# Settings for a TLS enabled server.
+#
+#    server {
+#        listen       443 ssl http2 default_server;
+#        listen       [::]:443 ssl http2 default_server;
+#        server_name  _;
+#        root         /usr/share/nginx/html;
+#
+#        ssl_certificate "/etc/pki/nginx/server.crt";
+ssl_certificate_key "/etc/pki/nginx/private/server.key";
+#        ssl_session_cache shared:SSL:1m;
+#        ssl_session_timeout  10m;
+#        ssl_ciphers PROFILE=SYSTEM;
+#        ssl_prefer_server_ciphers on;
+#
+#        # Load configuration files for the default server block.
+#        include /etc/nginx/default.d/*.conf;
+#
+#        location / {
+#        }
+#
+#        error_page 404 /404.html;
+#            location = /40x.html {
+#        }
+#
+#        error_page 500 502 503 504 /50x.html;
+#            location = /50x.html {
+#        }
+#    }
+
+}
+```
+
+add index.html file in the root server folder for testing
+
+nginx -s reload
+index.html 파일이 정상적으로 호스팅되면 성공
+
+
+
+
+그런데 보통 nginx.conf를 바로 건드리지 않고 conf.d/local.conf를 수정해서 사용한다.
+
+
+```
+    server {
+        listen       80;
+        server_name local.cotnals.com;
+        <!-- 이렇게 로컬 호스트를 따로 설정해도 됨 -->
+        <!-- localhost -->
+ 
+        location / {
+            root /home/workspace/www/mydealdev;
+            index index.html
+            try_files $uri /index.html
+    }
+    }
+```
+
+그런데 local.cotnals.com은 없는 호스트거나 다른 사람 소유일수 있기때문에 로컬PC의 호스팅을 수정해줘야 함
+그래서 로컬 PC(도커PC 아님)
+
+vi /etc/hosts
+
+```
+# Host Database
+#
+# localhost is used to configure the loopback interface
+# when the system is booting.  Do not change this entry.
+##
+127.0.0.1       localhost
+127.0.0.1       local.cotnals.com 
+<!-- 이렇게 넣어주면 됨 -->
+255.255.255.255 broadcasthost
+::1             localhost
+# Added by Docker Desktop
+# To allow the same kube context to work on the host and the container:
+127.0.0.1 kubernetes.docker.internal
+# End of section
+```
+
+브라우저에 주소를 입력하면 /etc/hosts로 먼저가서 찾고 없으면 dns로 간다.
+
+그래서 브라우저에 도메인 입력하면 도메인을  conf파일의 server_name과 비교해서 localhost는 nginx.conf가 처리하고 local.cotnals.com은 local.conf가 처리한다.
+
+
+### docker exit하면 docker start, docker attach를 다시 해줘야 하는 번거로움
+그래서 ctrl p q로 빠져나오면 attach만 다시 하면된다
+
+
+### .bashrc v / .bash_profile
+ssh를 사용해서 로그인 하면 .bash_profile을 사용하기때문에 그안의 셋팅, 예를들어 alias가 사용 가능
+그러나 docker는 attach해서 사용하는것이기 때문에 .bash_profile이 아닌 .bashrc를 사용한다.
