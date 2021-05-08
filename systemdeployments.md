@@ -378,3 +378,47 @@ docker save -o mydealdevimg.tar mydealdevimg
 #### Load
 docker load -i mydealdevimg.tar
 자기 도커에 이미지 생성
+
+
+
+# Workflow
+
+
+1. PC (Mac or Windows)
+
+- Hosts 파일 수정
+sudo vi /etc/hosts
+```
+ip-address mydeal
+ip-address-server mydealh
+127.0.0.1 local.mydeal.com
+```
+
+2. Docker (mydealdev)
+cd /etc/nginx
+vi conf.d/local.conf
+nginx -s reload
+cd
+vi .bashrc
+```
+alias
+alias ll ="ls-al"
+alias ncloud="ssh@mydealh =p 50000"
+```
+. .bashrc //bashrc를 적용하는 실행 커맨드
+rm /etc/localtime
+ln -s /usr/share/zoneinfo/Asia/Seoul /etc/localtime //새로운 링크 설정
+
+예를들어
+ln -s /home/workspace/www/mydeal www
+cd www
+
+3. rsync 사용법
+
+서버에서 데몬 띄우기
+ps -ef | grep rsync
+systemctl start rsyncd.service
+systemctl enable rsyncd.service
+
+도커에서 파일 받는 예
+rsync -avz -e 'ssh -p 50000' mydealh:/root/check.txt .
