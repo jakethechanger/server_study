@@ -57,5 +57,92 @@ mysql -uroot -p
 mysql.server stop
 ```
 
-Final test
 
+# Senior coding SQL
+
+docker search mysql
+docker pull mysql
+docker run -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=r! --name mysql mysql
+docker start mysql //attach가 아닌 exec으로 들어간다.
+docker exec -it mysql bash
+
+
+## Create Test Data
+- Install MySQL Workbench
+- Create Database (testdb)
+- Create Tables (Dept, Emp)
+- Insert Test Data
+
+### Create Database
+User, Authority는 따로 만들어줘도 됨
+- create database dooodb;
+- show databases;
+- use dooodb;
+
+// db 삭제
+- drop database dooodb;
+
+### Create User
+- create user <user-name>@'<host(IP address)>' identified by '<password>';
+- create user dooo@'%' identified by '1234';
+- select * FROM user;
+- select host, user FROM user;
+```
+| %         | root             |
+| localhost | mysql.infoschema |
+| localhost | mysql.session    |
+| localhost | mysql.sys        |
+| localhost | root
+```
+
+
+- mysql -u dooo -p
+
+//mySQL client에서 Docker mysql을 사용하고 싶으면 port를 다르게 하거나 로컬 sql을 중지
+
+### User privileges
+- grant all privileges on *.* to '<usern-name>'@'<host>';
+grant all privileges on dooodb.* to 'dooo'@'%';
+
+- revoke all privileges on dooodb.* from 'dooo'@'%';
+
+- flush privileges;
+
+### Check privileges
+- show grants for '<user-name>'@'<host>';
+show grants for dooo;
+
+
+### Delete user
+- drop user dooo@'%';
+
+### find current user 
+select current_user();
+
+### see timezone
+show variables like '%time_zime%';
+set time_zone = 'Asia/Seoul';
+
+select unix_timestamp();
+select from_unixtime(1620538451);
+
+### show processlist;
+
+
+### Create table
+```
+create table Test(
+    id tinyint unsigned not null auto_increment,
+    name char(5) not null,
+    PRIMARY key(id));
+```
+
+If want to see the structure of Table
+-SHOW CREATE TABLE <table-name>;
+
+
+### truncate table <table-name>;
+
+### create new table copied by current table
+CREATE TABLE t_Test like Test;
+INSERT INTO t_Test SELECT * FROM Test;
